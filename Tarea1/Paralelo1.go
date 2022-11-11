@@ -2,30 +2,45 @@ package main
 
 import (
 	"fmt"
-	"runtime"
+	"sync"
 	"time"
 )
 
-var quit chan int = make(chan int)
-
 func loop(a int) {
-	for i := 0; i < 100; i++ {
-		runtime.Gosched()
+	for i := 0; i < 50; i++ {
 		fmt.Printf("%d", a)
 	}
-	quit <- 0
+}
+func loop2(a int) {
+	for i := 0; i < 50; i++ {
+		fmt.Printf("%d", a)
+	}
 }
 
 func main() {
 
+	var wg sync.WaitGroup
+
 	start := time.Now()
-	go loop(1)
-	go loop(2)
-	go loop(3)
 
 	for i := 0; i < 3; i++ {
-		<-quit
+		wg.Add(2)
+
+		i := i
+
+		go func() {
+
+			loop(i)
+			defer wg.Done()
+		}()
+		go func() {
+
+			loop2(i)
+			defer wg.Done()
+		}()
 	}
+
+	wg.Wait()
 	end := time.Since(start)
 	fmt.Println()
 	fmt.Printf("Time: %d", end.Nanoseconds())
